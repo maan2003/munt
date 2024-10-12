@@ -3,7 +3,6 @@
   import QrScanner from 'qr-scanner';
 
   export let onScan: (result: string) => void;
-  export let onClose: () => void;
 
   let isMobile: boolean = false;
   let videoElement: HTMLVideoElement;

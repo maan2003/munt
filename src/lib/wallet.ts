@@ -1,11 +1,11 @@
-import { CashuWallet, getEncodedToken, getDecodedToken, type Token, type Proof } from '@cashu/cashu-ts';
+import { CashuMint, CashuWallet, getEncodedToken, getDecodedToken, type Token, type Proof } from '@cashu/cashu-ts';
 
 export class Wallet {
   private _cashuWallet: CashuWallet;
   private _proofs: Proof[] = [];
 
   constructor(mintUrl: string) {
-    this._cashuWallet = new CashuWallet(mintUrl);
+    this._cashuWallet = new CashuWallet(new CashuMint(mintUrl));
   }
 
   get balance(): number {
@@ -17,22 +17,20 @@ export class Wallet {
       throw new Error('Invalid amount');
     }
 
-    const { token } = await this._cashuWallet.send(amount, this._proofs);
+    // TODO: more granular coin selection
+    const { returnChange, send } = await this._cashuWallet.send(amount, this._proofs);
 
     // Update the wallet's proofs after sending
-    this._proofs = this._proofs.filter(proof =>
-      !token.token[0].proofs.some(sentProof => sentProof.secret === proof.secret)
-    );
+    this._proofs = returnChange;
 
-    return getEncodedToken(token);
+    return getEncodedToken({ token: [{ proofs: send, mint: this._cashuWallet.mint.mintUrl }] });
   }
 
-  async receive(encodedToken: string): Promise<boolean> {
+  async receive(token: string): Promise<boolean> {
     try {
-      const token = getDecodedToken(encodedToken);
-      const { newKeys, proofs: receivedProofs } = await this._cashuWallet.receive(token);
+      const newProofs = await this._cashuWallet.receive(token);
 
-      this._proofs = [...this._proofs, ...receivedProofs];
+      this._proofs = [...this._proofs, ...newProofs];
       return true;
     } catch (error) {
       console.error('Error receiving token:', error);

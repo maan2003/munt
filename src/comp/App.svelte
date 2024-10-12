@@ -4,7 +4,7 @@
   import QRCodeViewer from './QRCodeViewer.svelte';
   import { Wallet } from '../lib/wallet';
 
-  let wallet = new Wallet();
+  let wallet = new Wallet("https://testnut.cashu.space");
   let balance: number;
   $: balance = wallet.balance;
   let showScanner: boolean = false;
@@ -80,7 +80,7 @@
   </div>
 
   {#if showScanner}
-    <QRCodeScanner onScan={handleScan} onClose={toggleScanner} />
+    <QRCodeScanner onScan={handleScan} />
   {/if}
 
   {#if showAmountInput}
