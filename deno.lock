@@ -417,6 +417,7 @@
         "npm:@cashu/cashu-ts@^1.1.0",
         "npm:@sveltejs/vite-plugin-svelte@^3.1.2",
         "npm:@tsconfig/svelte@^5.0.4",
+        "npm:html5-qrcode@^2.3.8",
         "npm:qr-scanner@^1.4.2",
         "npm:qrcode@^1.5.4",
         "npm:svelte-check@^4.0.4",

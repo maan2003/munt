@@ -38,9 +38,8 @@
   });
 </script>
 
-<div class={`flex flex-col items-center mt-6 relative w-full h-[300px] bg-black overflow-hidden ${isMobile ? 'fixed inset-0 z-50 h-full mt-0' : ''}`}>
-  <button on:click={onClose} class="absolute top-4 right-4 text-white text-2xl bg-black bg-opacity-50 hover:bg-opacity-70 rounded-full w-10 h-10 flex items-center justify-center cursor-pointer z-60 transition-colors duration-200">
-    &times;
-  </button>
-  <video bind:this={videoElement} class="w-full h-full object-cover absolute inset-0"></video>
+<div class="flex flex-col items-center relative">
+  <div class="mt-4 w-full sm:w-3/4 md:w-1/2 lg:w-2/5 xl:w-1/3 max-w-[80vmin] aspect-square">
+    <video bind:this={videoElement} class="w-full h-full object-cover bg-black"></video>
+  </div>
 </div>

@@ -2,8 +2,11 @@
   import AmountInput from './AmountInput.svelte';
   import QRCodeScanner from './QRCodeScanner.svelte';
   import QRCodeViewer from './QRCodeViewer.svelte';
+  import { Wallet } from '../lib/wallet';
 
-  let balance: number = 100000000; // Example balance in sats (1 BTC = 100,000,000 sats)
+  let wallet = new Wallet();
+  let balance: number;
+  $: balance = wallet.balance;
   let showScanner: boolean = false;
   let showQRCode: boolean = false;
   let showAmountInput: boolean = false;
@@ -23,22 +26,33 @@
     sendAmount = 0;
   }
 
-  function handleSendAmount() {
-    if (sendAmount > 0 && sendAmount <= balance) {
+  async function handleSendAmount() {
+    try {
+      const result = await wallet.send(sendAmount);
+      qrCodeData = result;
       showQRCode = true;
       showAmountInput = false;
-      generateQRCode();
-    } else {
-      alert('Please enter a valid amount');
+      balance = wallet.balance;  // Update balance
+    } catch (error) {
+      alert('Failed to send. Please check the amount.');
     }
   }
 
-  function generateQRCode() {
-    qrCodeData = `wallet-address-${Math.random().toString(36).substring(7)}-amount-${sendAmount}`;
-  }
-
-  function handleScan(result: string) {
+  async function handleScan(result: string) {
     console.log('Scanned QR code:', result);
+    try {
+      const success = await wallet.receive(result);
+      if (success) {
+        const match = result.match(/amount-(\d+)/);
+        const amount = match ? match[1] : 'unknown';
+        alert(`Received ${amount} sats`);
+        balance = wallet.balance;  // Update balance
+      } else {
+        alert('Invalid QR code');
+      }
+    } catch (error) {
+      alert('Error processing QR code');
+    }
     showScanner = false;
   }
 </script>
@@ -72,7 +86,7 @@
   {#if showAmountInput}
     <div class="bg-white p-6 rounded-lg shadow-md">
       <h2 class="text-xl font-semibold mb-4 text-center text-green-600">Enter Amount to Send</h2>
-      <AmountInput bind:value={sendAmount} max={balance} onSubmit={handleSendAmount} />
+      <AmountInput bind:value={sendAmount} max={wallet.balance} onSubmit={handleSendAmount} />
     </div>
   {/if}
 
