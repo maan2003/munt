@@ -426,6 +426,7 @@
         "npm:tailwindcss@^3.4.13",
         "npm:tslib@^2.7.0",
         "npm:typescript@^5.5.3",
+        "npm:vite-plugin-top-level-await@^1.4.4",
         "npm:vite@^5.4.8"
       ]
     }

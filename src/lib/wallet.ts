@@ -29,7 +29,7 @@ export class Wallet {
   }
 
   async send(amount: number): Promise<string> {
-    if (amount <= 0 || amount > this.balance) {
+    if (amount <= 0 || amount > await this.getBalance()) {
       throw new Error('Invalid amount');
     }
 
@@ -64,11 +64,15 @@ export class Wallet {
 
       const stringifiedProofs = newProofs.map(JSON.stringify);
       console.log('Stringified proofs:', stringifiedProofs);
-      this._ecash_manager.add_notes(stringifiedProofs);
+      await this._ecash_manager.add_notes(stringifiedProofs);
       return true;
     } catch (error) {
       console.error('Error receiving token:', error);
       return false;
     }
+  }
+
+  async refresh(): Promise<void> {
+    await this._ecash_manager.refresh()
   }
 }

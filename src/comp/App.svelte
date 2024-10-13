@@ -13,6 +13,7 @@
   let mnemonic: string = Wallet.generateMnemonic()
   let mnemonicError: string = '';
   let balance: number = 0;
+  let mintUrl: string = "https://mint.minibits.cash/Bitcoin";
 
   let activeTasks: Set<string> = new Set();
 
@@ -23,7 +24,7 @@
       Wallet.validateMnemonic(mnemonic);
       mnemonicError = '';
       console.log(wallet);
-      wallet = await Wallet.init("https://mint.minibits.cash/Bitcoin", mnemonic);
+      wallet = await Wallet.init(mintUrl, mnemonic);
       console.log(wallet);
     } catch (error) {
       mnemonicError = error;
@@ -43,6 +44,11 @@
     }
   }
   $: updateBalance(wallet);
+
+  async function refreshBalance() {
+    wallet.refresh();
+    wallet = wallet;
+  }
 
   function toggleScanner() {
     showScanner = !showScanner;
@@ -95,8 +101,23 @@
 <div class="max-w-md mx-auto my-8 p-8 bg-gray-50 rounded-lg shadow-lg sm:max-w-full sm:m-0 sm:rounded-none">
   <h1 class="text-3xl font-bold mb-6 text-center text-blue-600">My Wallet</h1>
 
+  <div class="mb-4 text-center bg-white p-4 rounded-lg shadow">
+    <h2 class="text-lg font-semibold mb-2 text-blue-600">Mint URL</h2>
+    <p class="text-sm text-gray-600 break-all">{mintUrl}</p>
+  </div>
+
   <div class="mb-8 text-center bg-white p-6 rounded-lg shadow">
-    <p class="text-2xl font-semibold">Balance: <span class="text-green-600">{balance.toLocaleString()} sats</span></p>
+    <div class="flex items-center justify-center">
+      <p class="text-2xl font-semibold mr-2">Balance: <span class="text-green-600">{balance.toLocaleString()} sats</span></p>
+      <button
+        on:click={refreshBalance}
+        class="text-blue-500 hover:text-blue-600 font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50 shadow-md"
+      >
+        <svg class="w-5 h-5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+        </svg>
+      </button>
+    </div>
   </div>
 
   <div class="mb-6 text-center bg-white p-4 rounded-lg shadow">
