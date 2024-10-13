@@ -4,7 +4,6 @@
   import QRCodeViewer from './QRCodeViewer.svelte';
   import { Wallet } from '../lib/wallet';
 
-  let balance: number;
   let showScanner: boolean = false;
   let showQRCode: boolean = false;
   let showAmountInput: boolean = false;
@@ -15,9 +14,12 @@
   let mnemonicError: string = '';
   let balance: number = 0;
 
+  let activeTasks: Set<string> = new Set();
+
   async function updateWallet(mnemonic) {
+    activeTasks.add('updateWallet');
+    activeTasks = activeTasks;
     try {
-      // FIXME: figure out why this is so slow
       Wallet.validateMnemonic(mnemonic);
       mnemonicError = '';
       console.log(wallet);
@@ -26,6 +28,9 @@
     } catch (error) {
       mnemonicError = error;
       wallet = undefined;
+    } finally {
+      activeTasks.delete('updateWallet');
+      activeTasks = activeTasks;
     }
   }
   $: updateWallet(mnemonic);
@@ -53,6 +58,8 @@
   }
 
   async function handleSendAmount() {
+    activeTasks.add('sendAmount');
+    activeTasks = activeTasks;
     try {
       const result = await wallet.send(sendAmount);
       qrCodeData = result;
@@ -61,6 +68,9 @@
       wallet = wallet;
     } catch (error) {
       alert('Failed to send. Please check the amount.');
+    } finally {
+      activeTasks.delete('sendAmount');
+      activeTasks = activeTasks;
     }
   }
 
@@ -68,12 +78,17 @@
     console.log('Scanned QR code:', result);
     if (!showScanner) return;
     showScanner = false;
+    activeTasks.add('receiveAmount');
+    activeTasks = activeTasks;
     try {
       const success = await wallet.receive(result);
       wallet = wallet;
     } catch (error) {
       console.error(error)
       alert('Error processing QR code');
+    } finally {
+      activeTasks.delete('receiveAmount');
+      activeTasks = activeTasks;
     }
   }
 </script>
@@ -101,12 +116,14 @@
     <button
       on:click={toggleScanner}
       class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform hover:scale-105"
+      disabled={activeTasks.has('receiveAmount')}
     >
       Receive
     </button>
     <button
       on:click={toggleAmountInput}
       class="bg-green-500 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform hover:scale-105"
+      disabled={activeTasks.has('sendAmount')}
     >
       Send
     </button>
@@ -126,4 +143,15 @@
   {#if showQRCode}
     <QRCodeViewer amount={sendAmount} qrCodeData={qrCodeData} />
   {/if}
+
+  <div class="mt-4 text-center p-2 rounded-lg h-12 flex items-center justify-center text-gray-500 text-xs">
+      {#if activeTasks.size > 0}
+        <h3 class="font-medium mr-2">Active Tasks:</h3>
+      {/if}
+    <ul class="flex space-x-2">
+      {#each Array.from(activeTasks) as task}
+        <li>{task}</li>
+      {/each}
+    </ul>
+  </div>
 </div>

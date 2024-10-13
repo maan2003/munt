@@ -33,13 +33,29 @@ export class Wallet {
       throw new Error('Invalid amount');
     }
 
-    // TODO: more granular coin selection
-    const { returnChange, send } = await this._cashuWallet.send(amount, this._proofs);
+    const selectedNotes = await this._ecash_manager.select_notes((notes) => {
+      const parsedNotes = notes.map(JSON.parse);
+      let sum = 0;
+      const selected = [];
+      for (const note of parsedNotes) {
+        if (sum >= amount) break;
+        sum += note.amount;
+        selected.push(note);
+      }
+      return selected.map(JSON.stringify);
+    });
 
-    // Update the wallet's proofs after sending
-    this._proofs = returnChange;
+    const parsedProofs = selectedNotes.map(JSON.parse);
+    const { returnChange, send } = await this._cashuWallet.send(amount, parsedProofs);
+    console.log('Return change:', returnChange);
+    await this._ecash_manager.add_notes(returnChange.map(JSON.stringify));
 
-    return getEncodedToken({ token: [{ proofs: send, mint: this._cashuWallet.mint.mintUrl }] });
+    console.log('Proofs to send:', send);
+    console.log('Mint URL:', this._cashuWallet.mint.mintUrl);
+    const encodedToken = getEncodedToken({ token: [{ proofs: send, mint: this._cashuWallet.mint.mintUrl }] });
+    console.log('Encoded token:', encodedToken);
+
+    return encodedToken;
   }
 
   async receive(token: string): Promise<boolean> {
