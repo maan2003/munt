@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import AmountInput from './AmountInput.svelte';
   import QRCodeScanner from './QRCodeScanner.svelte';
   import QRCodeViewer from './QRCodeViewer.svelte';
@@ -10,12 +11,26 @@
   let qrCodeData: string = '';
   let sendAmount: number = 0;
   let wallet;
-  let mnemonic: string = Wallet.generateMnemonic()
+  let mnemonic: string;
   let mnemonicError: string = '';
   let balance: number = 0;
   let mintUrl: string = "https://mint.minibits.cash/Bitcoin";
 
   let activeTasks: Set<string> = new Set();
+
+  onMount(() => {
+    const storedMnemonic = localStorage.getItem('mnemonic');
+    if (storedMnemonic) {
+      mnemonic = storedMnemonic;
+    } else {
+      generateNewMnemonic();
+    }
+  });
+
+  function generateNewMnemonic() {
+    mnemonic = Wallet.generateMnemonic();
+    localStorage.setItem('mnemonic', mnemonic);
+  }
 
   async function updateWallet(mnemonic) {
     activeTasks.add('updateWallet');
@@ -26,6 +41,7 @@
       console.log(wallet);
       wallet = await Wallet.init(mintUrl, mnemonic);
       console.log(wallet);
+      localStorage.setItem('mnemonic', mnemonic);
     } catch (error) {
       mnemonicError = error;
       wallet = undefined;
@@ -122,12 +138,22 @@
 
   <div class="mb-6 text-center bg-white p-4 rounded-lg shadow">
     <h2 class="text-xl font-semibold mb-2 text-blue-600">Mnemonic Phrase</h2>
-    <input
-      type="text"
-      bind:value={mnemonic}
-      placeholder="Enter your mnemonic phrase"
-      class="w-full p-2 border rounded text-sm text-gray-600 {mnemonicError ? 'border-red-500' : ''}"
-    />
+    <div class="flex items-center">
+      <input
+        type="text"
+        bind:value={mnemonic}
+        placeholder="Enter your mnemonic phrase"
+        class="flex-grow p-2 border rounded text-sm text-gray-600 {mnemonicError ? 'border-red-500' : ''}"
+      />
+      <button
+        on:click={generateNewMnemonic}
+        class="ml-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out transform hover:scale-105"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+        </svg>
+      </button>
+    </div>
     {#if mnemonicError}
       <p class="text-red-500 text-sm mt-2">{mnemonicError}</p>
     {/if}
