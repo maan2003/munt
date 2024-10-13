@@ -4,14 +4,29 @@
   import QRCodeViewer from './QRCodeViewer.svelte';
   import { Wallet } from '../lib/wallet';
 
-  let wallet = new Wallet("https://testnut.cashu.space");
   let balance: number;
-  $: balance = wallet.balance;
   let showScanner: boolean = false;
   let showQRCode: boolean = false;
   let showAmountInput: boolean = false;
   let qrCodeData: string = '';
   let sendAmount: number = 0;
+  let wallet;
+  let mnemonic: string = Wallet.generateMnemonic()
+  let mnemonicError: string = '';
+
+  async function updateWallet(mnemonic) {
+    try {
+      if (!Wallet.validateMnemonic(mnemonic)) {
+        throw new Error('Invalid mnemonic');
+      }
+      wallet = await Wallet.init("https://mint.minibits.cash/Bitcoin", mnemonic);
+      mnemonicError = '';
+    } catch (error) {
+      mnemonicError = error.message;
+      wallet = null;
+    }
+  }
+  $: updateWallet(mnemonic);
 
   function toggleScanner() {
     showScanner = !showScanner;
@@ -32,7 +47,7 @@
       qrCodeData = result;
       showQRCode = true;
       showAmountInput = false;
-      balance = wallet.balance;  // Update balance
+      wallet = wallet;
     } catch (error) {
       alert('Failed to send. Please check the amount.');
     }
@@ -42,26 +57,31 @@
     console.log('Scanned QR code:', result);
     try {
       const success = await wallet.receive(result);
-      if (success) {
-        const match = result.match(/amount-(\d+)/);
-        const amount = match ? match[1] : 'unknown';
-        alert(`Received ${amount} sats`);
-        balance = wallet.balance;  // Update balance
-      } else {
-        alert('Invalid QR code');
-      }
+      wallet = wallet;
     } catch (error) {
       alert('Error processing QR code');
     }
     showScanner = false;
   }
 </script>
-
 <div class="max-w-md mx-auto my-8 p-8 bg-gray-50 rounded-lg shadow-lg sm:max-w-full sm:m-0 sm:rounded-none">
   <h1 class="text-3xl font-bold mb-6 text-center text-blue-600">My Wallet</h1>
 
   <div class="mb-8 text-center bg-white p-6 rounded-lg shadow">
-    <p class="text-2xl font-semibold">Balance: <span class="text-green-600">{balance.toLocaleString()} sats</span></p>
+    <p class="text-2xl font-semibold">Balance: <span class="text-green-600">{((wallet?.balance === undefined) ? 0:  wallet.balance ).toLocaleString()} sats</span></p>
+  </div>
+
+  <div class="mb-6 text-center bg-white p-4 rounded-lg shadow">
+    <h2 class="text-xl font-semibold mb-2 text-blue-600">Mnemonic Phrase</h2>
+    <input
+      type="text"
+      bind:value={mnemonic}
+      placeholder="Enter your mnemonic phrase"
+      class="w-full p-2 border rounded text-sm text-gray-600 {mnemonicError ? 'border-red-500' : ''}"
+    />
+    {#if mnemonicError}
+      <p class="text-red-500 text-sm mt-2">{mnemonicError}</p>
+    {/if}
   </div>
 
   <div class="flex justify-center space-x-6 mb-8">
