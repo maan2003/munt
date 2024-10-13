@@ -13,15 +13,19 @@ export class Wallet {
   }
 
   static async init(mintUrl: string, mnemonic: string) {
-    new Wallet(mintUrl, await WasmEcashManager.new(mnemonic.split(" ")));
+    return new Wallet(mintUrl, await WasmEcashManager.new(mnemonic.split(" ")));
+  }
+
+  static validateMnemonic(mn: string) {
+    WasmEcashManager.validate_mnemonic(mn);
   }
 
   static generateMnemonic(): string {
     return WasmEcashManager.generate_mnemonic();
   }
 
-  get balance(): number {
-    return this._ecash_manager.get_cached_notes().reduce((sum, proof) => sum + JSON.parse(proof).amount, 0);
+  async getBalance(): number {
+    return (await this._ecash_manager.get_cached_notes()).reduce((sum, proof) => sum + JSON.parse(proof).amount, 0);
   }
 
   async send(amount: number): Promise<string> {
@@ -42,7 +46,9 @@ export class Wallet {
     try {
       const newProofs = await this._cashuWallet.receive(token);
 
-      this._proofs = [...this._proofs, ...newProofs];
+      const stringifiedProofs = newProofs.map(JSON.stringify);
+      console.log('Stringified proofs:', stringifiedProofs);
+      this._ecash_manager.add_notes(stringifiedProofs);
       return true;
     } catch (error) {
       console.error('Error receiving token:', error);

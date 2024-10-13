@@ -13,20 +13,31 @@
   let wallet;
   let mnemonic: string = Wallet.generateMnemonic()
   let mnemonicError: string = '';
+  let balance: number = 0;
 
   async function updateWallet(mnemonic) {
     try {
-      if (!Wallet.validateMnemonic(mnemonic)) {
-        throw new Error('Invalid mnemonic');
-      }
-      wallet = await Wallet.init("https://mint.minibits.cash/Bitcoin", mnemonic);
+      // FIXME: figure out why this is so slow
+      Wallet.validateMnemonic(mnemonic);
       mnemonicError = '';
+      console.log(wallet);
+      wallet = await Wallet.init("https://mint.minibits.cash/Bitcoin", mnemonic);
+      console.log(wallet);
     } catch (error) {
-      mnemonicError = error.message;
-      wallet = null;
+      mnemonicError = error;
+      wallet = undefined;
     }
   }
   $: updateWallet(mnemonic);
+
+  async function updateBalance(wallet) {
+    if (wallet) {
+      balance = await wallet.getBalance();
+    } else {
+      balance = 0;
+    }
+  }
+  $: updateBalance(wallet);
 
   function toggleScanner() {
     showScanner = !showScanner;
@@ -55,20 +66,22 @@
 
   async function handleScan(result: string) {
     console.log('Scanned QR code:', result);
+    if (!showScanner) return;
+    showScanner = false;
     try {
       const success = await wallet.receive(result);
       wallet = wallet;
     } catch (error) {
+      console.error(error)
       alert('Error processing QR code');
     }
-    showScanner = false;
   }
 </script>
 <div class="max-w-md mx-auto my-8 p-8 bg-gray-50 rounded-lg shadow-lg sm:max-w-full sm:m-0 sm:rounded-none">
   <h1 class="text-3xl font-bold mb-6 text-center text-blue-600">My Wallet</h1>
 
   <div class="mb-8 text-center bg-white p-6 rounded-lg shadow">
-    <p class="text-2xl font-semibold">Balance: <span class="text-green-600">{((wallet?.balance === undefined) ? 0:  wallet.balance ).toLocaleString()} sats</span></p>
+    <p class="text-2xl font-semibold">Balance: <span class="text-green-600">{balance.toLocaleString()} sats</span></p>
   </div>
 
   <div class="mb-6 text-center bg-white p-4 rounded-lg shadow">
@@ -106,7 +119,7 @@
   {#if showAmountInput}
     <div class="bg-white p-6 rounded-lg shadow-md">
       <h2 class="text-xl font-semibold mb-4 text-center text-green-600">Enter Amount to Send</h2>
-      <AmountInput bind:value={sendAmount} max={wallet.balance} onSubmit={handleSendAmount} />
+      <AmountInput bind:value={sendAmount} max={balance} onSubmit={handleSendAmount} />
     </div>
   {/if}
 
